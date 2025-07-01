@@ -8,20 +8,140 @@
   <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
   <link href="{% static 'sbadmin/css/styles.css' %}" rel="stylesheet" />
   <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+
+  <style>
+    @media print {
+      /* Mengatur halaman A4 Portrait */
+      @page {
+        size: A4 portrait;
+        margin-top: 0mm;  /* Menurunkan margin agar tidak terlalu besar */
+        margin-bottom: 20mm;
+      }
+
+      html, body {
+        width: 210mm;
+        height: 297mm;
+        margin: 0;  /* Menghilangkan margin default */
+        padding: 0;
+        font-size: 12pt;
+        background-color: white;
+      }
+
+      /* Menyembunyikan elemen yang tidak perlu saat pencetakan */
+      .sb-topnav, #layoutSidenav_nav, footer,
+      .d-print-none, .btn, .form-control, .form-select, form {
+        display: none !important;
+      }
+
+      #layoutSidenav_content {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      /* Memastikan berita acara berada di halaman yang terpisah */
+      #berita-acara {
+        page-break-before: always;  /* Memulai halaman baru untuk berita acara */
+        visibility: visible;
+      }
+
+      /* Mengatur margin dan padding konten agar tidak terlalu besar */
+      .container, .content {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+
+      /* Mengatur posisi tabel dan elemen-elemen dalam berita acara */
+      .table {
+        page-break-inside: auto;
+      }
+
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+
+      /* Penataan header berita acara */
+      .header, .text {
+        margin-top: 0;
+        padding-top: 0;
+      }
+
+      .header .title {
+        font-size: 18px;
+        font-weight: bold;
+        line-height: 1.2;
+        font-style: italic;
+      }
+
+      /* Styling untuk separator horizontal */
+      .separator {
+        border-top: 2px solid black;
+        margin: 20px 0;
+      }
+    }
+
+    /* Penataan elemen-elemen umum di layar biasa */
+    .container {
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: left;
+    }
+
+    .header .logo {
+      margin-right: 5px;
+    }
+
+    .header .logo img {
+      width: 80px;
+      height: auto;
+    }
+
+    .header .text {
+      font-size: 14px;
+    }
+
+    .header .title {
+      font-size: 18px;
+      font-weight: bold;
+      line-height: 1.2;
+      font-style: italic;
+    }
+
+    .header .subtitle {
+      font-size: 16px;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table th, .table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .table th {
+      background-color: #f2f2f2;
+    }
+
+  </style>
+
+  {% block extra_css %}{% endblock %}
 </head>
 <body class="sb-nav-fixed">
 
   <!-- ✅ Top Navbar -->
   <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
-    <!-- Brand -->
     <a class="navbar-brand ps-3" href="#">S I P E T R A</a>
-
-    <!-- Sidebar Toggle -->
     <button class="btn btn-link btn-sm order-1 order-lg-0 me-4" id="sidebarToggle">
       <i class="fas fa-bars"></i>
     </button>
-
-    <!-- ✅ Logout Form -->
     <ul class="navbar-nav ms-auto me-3">
       <li class="nav-item">
         <form method="POST" action="{% url 'logout' %}">
@@ -53,6 +173,10 @@
             <a class="nav-link" href="{% url 'view_data' %}">
               <div class="sb-nav-link-icon"><i class="fas fa-table"></i></div>
               View Data
+            </a>
+            <a class="nav-link" href="{% url 'print_ba' %}">
+              <div class="sb-nav-link-icon"><i class="fas fa-print"></i></div>
+              Cetak Berita Acara
             </a>
           </div>
         </div>
