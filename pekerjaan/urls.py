@@ -10,4 +10,5 @@ urlpatterns = [
     path('rincian/', views.rincian_pekerjaan, name='rincian_pekerjaan'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('print/', views.print_ba, name='print_ba'),
 ]

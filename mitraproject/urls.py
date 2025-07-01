@@ -17,4 +17,6 @@ urlpatterns = [
     path('edit/<int:id>/', views.edit_data, name='edit_data'),
     path('delete/<int:id>/', views.delete_data, name='delete_data'),
     path('pekerjaan/rincian/', views.rincian_pekerjaan, name='rincian_pekerjaan'),
+    path('print/', views.print_ba, name='print_ba'),
+    path('berita-acara/pdf/', views.berita_acara_pdf, name='berita_acara_pdf'),
 ]

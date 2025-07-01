@@ -9,6 +9,15 @@ from django.contrib.auth import authenticate, login, logout
 from django.core.paginator import Paginator
 from collections import defaultdict
 import json
+from django.utils import timezone
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.shortcuts import render
+import tempfile
+from datetime import datetime
+from django.db.models import Q
+from django.utils.text import slugify  # Untuk bantu pencocokan kasar
 
 # Daftar bulan dan satuan
 bulan_list = ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -272,3 +281,170 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+
+
+@login_required
+def print_ba(request):
+    bulan = request.GET.get('bulan')
+    mitra = request.GET.get('mitra')
+    nomor_bast = request.GET.get('nomor_bast')
+    tanggal_bast = request.GET.get('tanggal_bast')
+
+    data_by_mitra = {}
+
+    if bulan:
+        if mitra:
+            mitra_list = [mitra]
+        else:
+            mitra_list = (
+                PekerjaanMitra.objects
+                .filter(bulan_kegiatan=bulan)
+                .values_list('nama_mitra', flat=True)
+                .distinct()
+                .order_by('nama_mitra')
+            )
+
+        for m in mitra_list:
+            pekerjaan = (
+                PekerjaanMitra.objects
+                .filter(bulan_kegiatan=bulan, nama_mitra=m)
+                .order_by('mulai_kegiatan')
+            )
+
+            total_nilai = pekerjaan.aggregate(
+                total=Sum('nilai_pekerjaan')
+            )['total'] or 0
+
+            # Pencarian mitra
+            mitra_obj = (
+                Mitra.objects
+                .filter(nama__iexact=m.strip())
+                .first()
+            )
+
+            if not mitra_obj:
+                nama_slug = slugify(m)
+                all_mitra = Mitra.objects.all()
+                for mitra_alt in all_mitra:
+                    if slugify(mitra_alt.nama) == nama_slug:
+                        mitra_obj = mitra_alt
+                        break
+
+            data_by_mitra[m] = {
+                'pekerjaan': pekerjaan,
+                'sobat_id': mitra_obj.sobat_id if mitra_obj else '',
+                'alamat': mitra_obj.alamat if mitra_obj else '',
+                'total_nilai': total_nilai,  # ← tambahkan ini
+            }
+
+
+    mitra_dropdown = (
+        PekerjaanMitra.objects
+        .values_list('nama_mitra', flat=True)
+        .distinct()
+        .order_by('nama_mitra')
+    )
+
+    # Tambahan: ubah tanggal BAST ke format Indonesia
+    tanggal_bast_indo = format_tanggal_indonesia(tanggal_bast) if tanggal_bast else ""
+
+    return render(request, 'pekerjaan/print_ba.html', {
+        'bulan': bulan,
+        'mitra': mitra,
+        'bulan_list': bulan_list,
+        'mitra_list': mitra_dropdown,
+        'data_by_mitra': data_by_mitra,
+        'nomor_bast': nomor_bast,
+        'tanggal_bast': tanggal_bast,
+        'tanggal_bast_indo': tanggal_bast_indo,
+        'tahun': 2025,
+    })
+
+
+@login_required
+def input_ba(request):
+    bulan = request.GET.get('bulan')
+    mitra_list = []
+
+    if bulan:
+        mitra_list = (
+            PekerjaanMitra.objects
+            .filter(bulan_kegiatan=bulan)
+            .values_list('nama_mitra', flat=True)
+            .distinct()
+        )
+
+    if request.method == 'POST':
+        total = int(request.POST.get('total', 0))
+        for i in range(total):
+            nama = request.POST.get(f'mitra_{i}')
+            bulan_input = request.POST.get(f'bulan_{i}')
+            nomor = request.POST.get(f'nomor_{i}')
+            tanggal = request.POST.get(f'tanggal_{i}')
+
+            if nama and bulan_input and nomor and tanggal:
+                BeritaAcara.objects.update_or_create(
+                    nama_mitra=nama,
+                    bulan=bulan_input,
+                    defaults={
+                        'nomor': nomor,
+                        'tanggal': tanggal,
+                    }
+                )
+        messages.success(request, "Data BAST berhasil disimpan.")
+        return redirect('input_ba')
+
+    return render(request, 'pekerjaan/input_ba.html', {
+        'bulan_list': bulan_list,
+        'bulan': bulan,
+        'mitra_list': mitra_list,
+    })
+
+def berita_acara_pdf(request):
+    bulan = request.GET.get('bulan')
+    mitra = request.GET.get('mitra')
+    
+    if not bulan or not mitra:
+        return HttpResponse("Parameter bulan dan mitra wajib diisi", status=400)
+    
+    data_by_mitra = get_data_by_mitra(bulan, mitra)  # fungsi yang kamu buat sendiri
+    
+    context = {
+        'bulan': bulan,
+        'mitra': mitra,
+        'data_by_mitra': data_by_mitra,
+        'nomor_bast': request.GET.get('nomor_bast'),
+        'tanggal_bast': request.GET.get('tanggal_bast'),
+        'tahun': 2025,
+    }
+    
+    template = get_template('berita_acara_template.html')
+    html = template.render(context)
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'filename="berita_acara_{bulan}_{mitra}.pdf"'
+    
+    # Generate PDF
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    
+    if pisa_status.err:
+        return HttpResponse('Error generating PDF', status=500)
+    
+    return response
+
+def format_tanggal_indonesia(tanggal_str):
+    try:
+        tanggal_obj = datetime.strptime(tanggal_str, '%Y-%m-%d')
+        hari_mapping = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
+        bulan_mapping = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ]
+        hari = hari_mapping[tanggal_obj.weekday()]
+        tanggal = tanggal_obj.day
+        bulan = bulan_mapping[tanggal_obj.month - 1]
+        tahun = tanggal_obj.year
+        return f"{hari}, {tanggal} {bulan} {tahun}"
+    except ValueError:
+        return 'Format tanggal tidak valid'

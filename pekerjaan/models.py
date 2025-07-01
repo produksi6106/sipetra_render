@@ -41,3 +41,8 @@ class BebanHonor(models.Model):
     def __str__(self):
         return f"{self.tim} - {self.rincian}"
 
+class BeritaAcara(models.Model):
+    nama_mitra = models.CharField(max_length=100)
+    bulan = models.CharField(max_length=20)
+    nomor = models.CharField(max_length=100)
+    tanggal = models.DateField()

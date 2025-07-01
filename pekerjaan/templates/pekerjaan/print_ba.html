@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Cetak Berita Acara{% endblock %}
+
+{% block extra_css %}
+<style>
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+
+    #berita-acara, #berita-acara * {
+      visibility: visible;
+    }
+
+    #berita-acara {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+    }
+
+    nav, aside, .navbar, .sidebar, form, .d-print-none {
+      display: none !important;
+    }
+
+    .content {
+      margin-left: 0 !important;
+      margin-top: 0 !important;
+    }
+
+    .header, .text {
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    .filter-section {
+      page-break-after: always;
+      margin-bottom: 0;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+  }
+
+  .identitas p {
+    margin-bottom: 2px;
+    line-height: 1.2;
+  }
+
+  .identitas span.label {
+    display: inline-block;
+    width: 170px;
+    font-weight: bold;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+    justify-content: left;
+  }
+
+  .header .logo {
+    margin-right: 5px;
+  }
+
+  .header .logo img {
+    width: 80px;
+    height: auto;
+  }
+
+  .header .text {
+    font-size: 14px;
+  }
+
+  .header .title {
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 1.2;
+    font-style: italic;
+  }
+
+  .title br {
+    line-height: 0;
+  }
+
+  .header .subtitle {
+    font-size: 16px;
+  }
+
+  .header .nomor {
+    font-size: 14px;
+    margin-top: 10px;
+  }
+
+  .header .contact-info {
+    font-size: 12px;
+    margin-top: 5px;
+  }
+
+  .content {
+    margin-top: 20px;
+  }
+
+  .berita-acara-header {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 3px;
+  }
+
+  .berita-acara-subtitle {
+    text-align: center;
+    font-size: 16px;
+    margin-bottom: 3px;
+    font-weight: bold;
+  }
+
+  .badan-pusat-statistik {
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 3px;
+  }
+
+  .nomor {
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 3px;
+  }
+
+  .separator {
+    border-top: 2px solid black;
+    margin: 20px 0;
+  }
+  
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-4 d-print-none">Halaman Cetak Berita Acara</h2>
+
+<form method="get" class="row g-3 mb-3 align-items-end d-print-none filter-section">
+  <div class="col-md-3">
+    <label for="bulan" class="form-label">Pilih Bulan</label>
+    <select id="bulan" name="bulan" class="form-select" onchange="this.form.submit()">
+      <option value="">-- Pilih Bulan --</option>
+      {% for b in bulan_list %}
+        <option value="{{ b }}" {% if b == bulan %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label for="mitra" class="form-label">Pilih Mitra</label>
+    <select id="mitra" name="mitra" class="form-select" onchange="this.form.submit()">
+      <option value="">-- Pilih Mitra --</option>
+      {% for m in mitra_list %}
+        <option value="{{ m }}" {% if m == mitra %}selected{% endif %}>{{ m }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label for="nomor_bast" class="form-label">Nomor BAST</label>
+    <input type="text" id="nomor_bast" name="nomor_bast" class="form-control" value="{{ request.GET.nomor_bast }}" onchange="this.form.submit()">
+  </div>
+  <div class="col-md-3">
+    <label for="tanggal_bast" class="form-label">Tanggal BAST</label>
+    <input type="date" id="tanggal_bast" name="tanggal_bast" class="form-control" value="{{ request.GET.tanggal_bast }}" onchange="this.form.submit()">
+  </div>
+</form>
+
+{% if bulan and mitra and request.GET.nomor_bast and request.GET.tanggal_bast %}
+<div class="d-flex justify-content-end mb-3 gap-2 d-print-none">
+  <button onclick="window.print()" class="btn btn-outline-secondary">🖨️ Print / Save PDF</button>
+</div>
+
+<!-- Seluruh konten dicetak -->
+<div id="berita-acara" class="berita-acara">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <img src="{% static 'sbadmin/assets/img/logo.png' %}" alt="Logo" style="width: 100px;">
+    </div>
+    <div class="text">
+      <div class="title">BADAN PUSAT STATISTIK <br> KABUPATEN KETAPANG</div>
+      <div class="contact-info">
+        Jl. Letjen S. Parman No. 101, Ketapang Telp: 0534-32017 <br>
+        Homepage: <a href="https://ketapangkab.bps.go.id/" target="_blank">https://ketapangkab.bps.go.id/</a> | 
+        E-mail: <a href="mailto:bps6106@bps.go.id">bps6106@bps.go.id</a>
+      </div>
+    </div>
+  </div>
+
+  <hr class="separator">
+
+  <!-- Judul -->
+  <div class="berita-acara-subtitle">BERITA ACARA SERAH TERIMA</div>
+  <div class="berita-acara-subtitle">HASIL PEKERJAAN MITRA BULAN {{ bulan|upper }} TAHUN {{ tahun|default:"2025" }}</div>
+  <div class="berita-acara-subtitle">BADAN PUSAT STATISTIK KABUPATEN KETAPANG</div>
+  <div class="nomor">Nomor: {{ request.GET.nomor_bast|default:"..................." }}</div>
+
+  {% for mitra_nama, info in data_by_mitra.items %}
+    {% if mitra_nama == mitra %}
+      {% with pekerjaan_list=info.pekerjaan sobat_id=info.sobat_id alamat=info.alamat %}
+      <div class="p-4 mb-4 bg-white">
+        <p>Pada hari ini {{ tanggal_bast_indo }}, bertempat di Ketapang, kami yang bertanda tangan di bawah ini:</p>
+        <ol>
+          <li>
+            <div class="identitas">
+              <p><span class="label">Nama</span>: Febriansyah, SE</p>
+              <p><span class="label">NIP</span>: 198002162010111006</p>
+              <p><span class="label">Jabatan</span>: Kepala Subbagian Umum</p>
+              <p><span class="label">Unit Kerja</span>: BPS Kabupaten Ketapang</p>
+              <p><span class="label">Alamat Unit Kerja</span>: Jalan S. Parman No. 101</p>
+            </div>
+            <p>Bertindak untuk dan atas nama BPS Kabupaten Ketapang, selanjutnya disebut <strong>PIHAK PERTAMA</strong>.</p>
+          </li>
+
+          <li class="mt-3">
+            <div class="identitas">
+              <p><span class="label">Nama</span>: {{ mitra_nama }}</p>
+              <p><span class="label">Sobat-ID</span>: {{ sobat_id|stringformat:"s"|cut:".0"|default_if_none:"................" }}</p>
+              <p><span class="label">Alamat</span>: {{ alamat|default_if_none:"................" }}</p>
+            </div>
+            <p>Bertindak atas nama sendiri, selanjutnya disebut <strong>PIHAK KEDUA</strong>.</p>
+          </li>
+        </ol>
+
+        <p>Dengan ini menyatakan:</p>
+        <ol>
+          <li>PIHAK KEDUA telah melaksanakan pekerjaan sesuai dengan jadwal kegiatan untuk bulan {{ bulan }} tahun {{ tahun|default:"2025" }} dengan rincian sebagaimana terlampir.</li>
+          <li>PIHAK KEDUA telah menyelesaikan 100 persen pekerjaan berdasarkan hasil pemeriksaan dan evaluasi pekerjaan.</li>
+          <li>Berdasarkan angka 2 tersebut di atas, PIHAK KEDUA menyerahkan hasil pekerjaan kepada PIHAK PERTAMA, dan PIHAK PERTAMA menerima hasil pekerjaan tersebut yang telah sesuai dengan seharusnya.</li>
+        </ol>
+
+        <p class="mt-4">Demikian Berita Acara ini dibuat dengan sebenarnya dalam rangkap 2 (dua) dan menjadi sah berlaku setelah ditandatangani oleh KEDUA BELAH PIHAK.</p>
+
+        <table class="mt-5" style="width: 100%;">
+          <tr>
+            <td class="text-center">PIHAK KEDUA,<br><br><br><br><strong>{{ mitra_nama }}</strong></td>
+            <td class="text-center">PIHAK PERTAMA,<br><br><br><br><strong>Febriansyah, SE</strong></td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Lampiran -->
+      <div class="page-break">
+        <div class="header">
+          <div class="logo">
+            <img src="{% static 'sbadmin/assets/img/logo.png' %}" alt="Logo" style="width: 100px;">
+          </div>
+          <div class="text">
+            <div class="title">BADAN PUSAT STATISTIK <br> KABUPATEN KETAPANG</div>
+            <div class="contact-info">
+              Jl. Letjen S. Parman No. 101, Ketapang Telp: 0534-32017 <br>
+              Homepage: <a href="https://ketapangkab.bps.go.id/" target="_blank">https://ketapangkab.bps.go.id/</a> | 
+              E-mail: <a href="mailto:bps6106@bps.go.id">bps6106@bps.go.id</a>
+            </div>
+          </div>
+        </div>
+         <hr class="separator">
+        <div class="identitas">
+          <p><br>LAMPIRAN</b></p>
+          <p>BERITA ACARA PENYELESAIAN PEKERJAAN MITRA</p>
+          <p>BADAN PUSAT STATISTIK KABUPATEN KETAPANG</p>
+          <table>
+          <tr>
+            <td>Nomor Berita Acara</td>
+            <td>:</td>
+            <td>{{ request.GET.nomor_bast|default:"..................." }}</td>
+          </tr>
+          <tr>
+            <td>Nama Mitra</td>
+            <td>:</td>
+            <td>{{ mitra_nama }}</td>
+          </tr>
+          <tr>
+            <td>Bulan Kegiatan</td>
+            <td>:</td>
+            <td>{{ bulan }}</td>
+          </tr>
+        </table>
+
+        </div>
+        <h6 class="text-center"><br><br>DAFTAR URAIAN PEKERJAAN, VOLUME PEKERJAAN, SATUAN PEKERJAAN, HONOR PERSATUAN PEKERJAAN, DAN NILAI PEKERJAAN</h6>
+        {% for nama_mitra, detail in data_by_mitra.items %}
+        <h5 style="margin-top: 30px;"></h5>
+        <table class="table table-bordered mt-3" style="border: 1px solid black; width: 99%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="text-align: center; vertical-align: middle;">No</th>
+              <th style="text-align: center; vertical-align: middle;">Uraian Pekerjaan</th>
+              <th style="text-align: center; vertical-align: middle;">Volume</th>
+              <th style="text-align: center; vertical-align: middle;">Satuan</th>
+              <th style="text-align: center; vertical-align: middle;">Honor per Satuan (Rp)</th>
+              <th style="text-align: center; vertical-align: middle;">Nilai Pekerjaan (Rp)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in detail.pekerjaan %}
+            <tr>
+              <td style="text-align: center; vertical-align: middle;">{{ forloop.counter }}</td>
+              <td style="text-align: left; vertical-align: middle;">{{ p.kegiatan }}</td>
+              <td style="text-align: center; vertical-align: middle;">{{ p.volume|default:0|floatformat:0 }}</td>
+              <td style="text-align: center; vertical-align: middle;">{{ p.satuan }}</td>
+              <td style="text-align: right; vertical-align: middle;">{{ p.honor_per_satuan|floatformat:0|intcomma }}</td>
+              <td style="text-align: right; vertical-align: middle;">{{ p.nilai_pekerjaan|floatformat:0|intcomma }}</td>
+            </tr>
+            {% endfor %}
+            <tr>
+              <td colspan="5" style="text-align: right; font-weight: bold;">Total</td>
+              <td style="text-align: right; font-weight: bold;">
+                {{ detail.total_nilai|floatformat:0|intcomma }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+{% endfor %}
+
+      </div>
+      {% endwith %}
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
